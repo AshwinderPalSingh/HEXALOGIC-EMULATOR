@@ -1,0 +1,51 @@
+<section class="memory-window">
+    <div class="subpanel-title">Internal RAM</div>
+    <div class="memory-scroll">
+        <table class="keil-table compact memory-table" data-table="ram">
+            <thead>
+                <tr>
+                    <th></th>
+                    {% for x in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"] %}
+                    <th>{{ x }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for ramval in ram %}
+                <tr>
+                    <th>{{ ramval[0][0][:-1] }}</th>
+                    {% for key, value in ramval %}
+                    <td data-watch-key="ram:{{ key }}">{{ (value|string)[2:] }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="memory-window">
+    <div class="subpanel-title">Code ROM</div>
+    <div class="memory-scroll">
+        <table class="keil-table compact memory-table" data-table="rom">
+            <thead>
+                <tr>
+                    <th></th>
+                    {% for x in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"] %}
+                    <th>{{ x }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for romval in rom %}
+                <tr>
+                    <th>{{ romval[0][0][:-1] }}</th>
+                    {% for key, value in romval %}
+                    <td data-watch-key="rom:{{ key }}">{{ (value|string)[2:] }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>

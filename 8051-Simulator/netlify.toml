@@ -1,0 +1,23 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from = "/backend/*"
+  to = "https://hexalogic.onrender.com/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/v2/*"
+  to = "https://hexalogic.onrender.com/api/v2/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

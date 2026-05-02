@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}HexaLogic | Multi-Architecture Emulator{% endblock %}
+{% block head %}
+<script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
+<script>
+window.HEXLOGIC_API_BASE = "/api/v2";
+window.HEXLOGIC_MONACO_BASE = "https://unpkg.com/monaco-editor@0.45.0/min/";
+if (typeof window.require === "undefined") {
+    console.error("Monaco AMD loader did not load from CDN.");
+} else {
+    window.require.config({
+        paths: {
+            vs: "https://unpkg.com/monaco-editor@0.45.0/min/vs"
+        }
+    });
+}
+</script>
+<script type="module" src="/static/sim8051-client.js"></script>
+<script type="module" src="/static/sim8051-app.js"></script>
+{% endblock %}
+{% block body %}
+{% set asset_prefix = "/static" %}
+{% include "_app_shell.html" %}
+{% endblock %}

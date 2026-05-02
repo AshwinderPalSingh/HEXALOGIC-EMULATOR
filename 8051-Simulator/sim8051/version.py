@@ -1,0 +1,6 @@
+API_VERSION = "2.1"
+SESSION_FORMAT_VERSION = 2
+CPU_MODEL_VERSIONS = {
+    "8051": "2026.04",
+    "arm": "2026.04-min",
+}

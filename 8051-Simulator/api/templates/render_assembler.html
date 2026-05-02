@@ -1,0 +1,30 @@
+<section class="subpanel build-output">
+    <div class="subpanel-title">Assembler Output</div>
+    {% if assembler_rows %}
+    <div class="assembler-scroll">
+        <table class="keil-table compact">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Source Ln</th>
+                    <th>Source</th>
+                    <th>Opcode Bytes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in assembler_rows %}
+                <tr class="{% if active_index is not none and row.index == active_index %}active-asm-row{% endif %}"
+                    data-asm-row="{{ row.index }}" data-source-line="{{ row.source_line if row.source_line is not none else '' }}">
+                    <td>{{ row.index }}</td>
+                    <td>{{ row.source_line if row.source_line is not none else "-" }}</td>
+                    <td>{{ row.source }}</td>
+                    <td>{{ row.opcode }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-output">No assembler output yet. Click Assemble to generate opcodes.</div>
+    {% endif %}
+</section>

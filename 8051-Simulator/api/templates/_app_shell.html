@@ -1,0 +1,289 @@
+<div class="ide-root" id="ide-root" data-workspace="code">
+    <div class="app-loader" id="app-loader" aria-live="polite">
+        <div class="loader-shell">
+            <div class="loader-spinner" aria-hidden="true"></div>
+            <img class="loader-logo" src="{{ asset_prefix }}/hexlogic-logo.png" alt="HexaLogic logo"
+                onerror="this.onerror=null;this.src='{{ asset_prefix }}/hexlogic-logo-light.png';">
+            <div class="loader-copy">
+                <div class="loader-title">HexaLogic Emulator</div>
+                <div class="loader-subtitle">Booting sandboxed multi-architecture debugger</div>
+            </div>
+            <div class="loader-bar"><span id="loader-progress"></span></div>
+        </div>
+    </div>
+    <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
+    <header class="titlebar">
+        <div class="title-left">
+            <img class="brand-logo" src="{{ asset_prefix }}/hexlogic-logo.png" alt="HexaLogic logo"
+                onerror="this.onerror=null;this.src='{{ asset_prefix }}/hexlogic-logo-light.png';">
+            <div class="brand-meta">
+                <span class="brand-name">HexaLogic</span>
+                <span class="brand-chip" id="target-chip">Target: 8051</span>
+            </div>
+        </div>
+        <div class="title-right">Sandboxed Multi-Architecture Debug View</div>
+    </header>
+
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <button type="button" class="tool-btn" id="assemble">Assemble</button>
+            <button type="button" class="tool-btn" id="run">Run</button>
+            <button type="button" class="tool-btn" id="step">Step Into</button>
+            <button type="button" class="tool-btn" id="step_over">Step Over</button>
+            <button type="button" class="tool-btn" id="step_out">Step Out</button>
+            <button type="button" class="tool-btn" id="step_back">Step Back</button>
+            <button type="button" class="tool-btn" id="pause">Pause</button>
+            <button type="button" class="tool-btn danger" id="stop">Stop</button>
+            <button type="button" class="tool-btn" id="run_to_cursor">Run To Cursor</button>
+            <button type="button" class="tool-btn danger" id="reset">Reset</button>
+        </div>
+        <div class="toolbar-group toolbar-right">
+            <div class="toolbar-segmented" role="group" aria-label="Editor or hardware view">
+                <span class="toolbar-label">View</span>
+                <button type="button" class="tool-btn small workspace-tab is-active" id="workspace_code" data-mode="code" data-workspace="code">Code</button>
+                <button type="button" class="tool-btn small workspace-tab" id="workspace_hardware" data-mode="hardware" data-workspace="hardware">Hardware</button>
+            </div>
+            <label class="toolbar-label" for="architecture_select">Architecture</label>
+            <select id="architecture_select" class="converter-select">
+                <option value="8051">8051</option>
+                <option value="arm">ARM</option>
+            </select>
+            <label class="toolbar-label" for="endian_select">Endian</label>
+            <select id="endian_select" class="converter-select">
+                <option value="little">Little</option>
+                <option value="big">Big</option>
+            </select>
+            <label class="toolbar-check">
+                <input type="checkbox" id="debug_toggle">
+                <span>Debug Mode</span>
+            </label>
+            <label class="toolbar-label" for="execution_mode_select">Execution</label>
+            <select id="execution_mode_select" class="converter-select">
+                <option value="realtime">Realtime</option>
+                <option value="fast">Fast</option>
+            </select>
+            <label class="toolbar-label" for="run_speed">Speed</label>
+            <input id="run_speed" class="speed-input" type="range" min="1" max="10" value="6">
+            <span class="speed-label" id="speed_label">6x</span>
+
+            <div class="toolbar-clock" aria-label="Target clock frequency">
+                <label class="toolbar-label" for="clock_input">Clock Hz</label>
+                <select id="clock_preset" class="converter-select" aria-label="Clock preset">
+                    <option value="11059200">11.0592M</option>
+                    <option value="12000000">12M</option>
+                    <option value="16000000">16M</option>
+                    <option value="24000000">24M</option>
+                    <option value="48000000">48M</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <input id="clock_input" class="clock-input" type="number" min="1" max="10000000000"
+                    step="1" value="11059200" autocomplete="off" aria-label="Clock frequency in hertz">
+                <button type="button" class="tool-btn tiny" id="clock_apply">Set</button>
+            </div>
+
+            <div class="toolbar-converter">
+                <label class="toolbar-label" for="convert_input">Base Converter</label>
+                <select id="convert_from" class="converter-select" aria-label="Convert from">
+                    <option value="hex">Hex</option>
+                    <option value="dec">Dec</option>
+                    <option value="bin">Bin</option>
+                </select>
+                <input class="converter-input" id="convert_input" autocomplete="off" placeholder="Value">
+                <span class="converter-arrow">to</span>
+                <select id="convert_to" class="converter-select" aria-label="Convert to">
+                    <option value="dec">Dec</option>
+                    <option value="hex">Hex</option>
+                    <option value="bin">Bin</option>
+                </select>
+                <input class="converter-output" id="convert_output" readonly aria-label="Conversion result">
+                <button type="button" class="tool-btn tiny" id="convert_swap">Swap</button>
+            </div>
+
+            <button type="button" class="tool-btn small" id="download_output">Download Output</button>
+            <button type="button" class="tool-btn small" id="export_state">Export State</button>
+            <button type="button" class="tool-btn small" id="import_state">Import State</button>
+            <button type="button" class="tool-btn small" id="waveform_toggle">Waveform</button>
+            <button type="button" class="tool-btn small" id="help_toggle" aria-expanded="false"
+                aria-controls="help-popover">Help</button>
+            <button type="button" class="tool-btn small" id="theme_toggle">Dark Mode</button>
+            <button type="button" class="tool-btn small" id="clear_breakpoints">Clear Breakpoints</button>
+            <label class="toolbar-label" for="memory_edit_input">Memory Edit</label>
+            <input class="memory-edit" placeholder="Ex: 20H=12H or 0x40=255" id="memory_edit_input" autocomplete="off">
+        </div>
+    </div>
+
+    <div class="help-popover" id="help-popover" hidden>
+        Help / Contact:
+        <a class="help-link" href="mailto:ashwinder.p.prof@gmail.com">ashwinder.p.prof@gmail.com</a>
+    </div>
+
+    <aside class="wave-drawer" id="wave-drawer" hidden aria-label="Logic waveform viewer">
+        <div class="wave-drawer-head">
+            <div class="wave-drawer-copy">
+                <div class="wave-drawer-title">Logic Wave Viewer</div>
+                <div class="wave-drawer-status" id="wave-status">No waveform channels detected.</div>
+            </div>
+            <button type="button" class="tool-btn tiny" id="wave-collapse">Close</button>
+        </div>
+        <div class="wave-drawer-body">
+            <div class="empty-output" id="wave-empty">Run code that toggles ports to populate the waveform view.</div>
+            <div class="wave-list" id="wave-list"></div>
+        </div>
+    </aside>
+
+    <main class="workspace modern-workspace" id="workspace">
+        <aside class="panel-column left-pane" data-column="left">
+            <section class="panel dock-panel target-panel" data-panel="target">
+                <div class="panel-title">Target Explorer</div>
+                <div class="panel-content">
+                    <ul class="project-tree" id="project-tree"></ul>
+                    <div class="breakpoint-summary">
+                        <div class="summary-title">Breakpoints</div>
+                        <div id="breakpoint-list" class="summary-body">None</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel dock-panel registers-panel" data-panel="execution">
+                <div class="panel-title">Execution State</div>
+                <div id="exec-state-panel" class="panel-content"></div>
+            </section>
+
+            <section class="panel dock-panel registers-panel" data-panel="registers">
+                <div class="panel-title">Registers and Flags</div>
+                <div id="registers-panel-body" class="panel-content panel-stack"></div>
+            </section>
+
+            <section class="panel dock-panel" data-panel="callstack">
+                <div class="panel-title">Call Stack</div>
+                <div id="call-stack-body" class="panel-content"></div>
+            </section>
+        </aside>
+
+        <div class="col-resizer" data-resizer="left" role="separator" aria-orientation="vertical"
+            aria-label="Resize left and center panels"></div>
+
+        <section class="panel-column center-pane" data-column="center">
+            <div class="code-workspace">
+                <section class="panel dock-panel editor-panel" data-panel="editor">
+                    <div class="panel-title panel-title-row">
+                        <span>Editor - main.asm</span>
+                        <span class="editor-hint">Glyph margin toggles breakpoints</span>
+                    </div>
+                    <div class="editor-shell">
+                        <div id="editor-host" class="editor-host"></div>
+                    </div>
+                </section>
+
+                <section class="panel dock-panel assembler-panel" data-panel="assembler">
+                    <div class="panel-title">Assembler Output</div>
+                    <div id="assembler-panel-body" class="panel-content"></div>
+                </section>
+
+                <section class="panel dock-panel debugger-panel" data-panel="debugger">
+                    <div class="panel-title">Debugger Console</div>
+                    <div class="debugger-grid">
+                        <div id="debug-console" class="debug-console"></div>
+                        <div id="error-box" class="error-box" hidden>No errors.</div>
+                    </div>
+                </section>
+
+                <section class="panel dock-panel trace-panel" data-panel="trace">
+                    <div class="panel-title">Trace Timeline</div>
+                    <div id="trace-panel-body" class="panel-content trace-timeline"></div>
+                </section>
+            </div>
+
+            <section class="panel dock-panel hardware-workspace" id="hardware-panel" data-panel="hardware" aria-label="Virtual hardware">
+                <div class="panel-title panel-title-row">
+                    <span>Virtual Hardware</span>
+                    <div class="vh-toolbar">
+                        <button type="button" class="tool-btn tiny" id="vh_zoom_out">−</button>
+                        <span class="vh-zoom-label" id="vh_zoom_label">100%</span>
+                        <button type="button" class="tool-btn tiny" id="vh_zoom_in">+</button>
+                        <button type="button" class="tool-btn tiny" id="vh_zoom_reset">Reset View</button>
+                        <button type="button" class="tool-btn tiny" id="vh_export_btn">Save layout</button>
+                        <button type="button" class="tool-btn tiny" id="vh_import_btn">Load layout</button>
+                        <button type="button" class="tool-btn tiny" id="vh_test_btn">Run Hardware Test</button>
+                    </div>
+                </div>
+                <div class="vh-layout">
+                    <aside class="vh-sidebar">
+                        <div class="vh-sidebar-head">Components</div>
+                        <div class="vh-palette" id="vh-component-palette"></div>
+                    </aside>
+                    <div class="vh-board-shell">
+                        <div class="vh-board-toolbar">
+                            <span>Board</span>
+                        </div>
+                        <div class="vh-canvas-wrap" id="vh-board-viewport">
+                            <div class="vh-stage" id="hardware-stage">
+                                <svg class="vh-wire-layer" id="vh-wire-layer" aria-hidden="true"></svg>
+                                <div class="vh-selection-box" id="vh-selection-box" hidden></div>
+                                <div class="vh-mcu-board" id="vh-mcu-board"></div>
+                                <div class="vh-canvas" id="hardware-canvas"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="vh-debug-panel" id="vh-debug-panel">
+                    <div class="vh-debug-grid">
+                        <section class="vh-debug-block">
+                            <h4>Port Monitor</h4>
+                            <div id="vh-port-values" class="vh-debug-scroll"></div>
+                        </section>
+                        <section class="vh-debug-block">
+                            <h4>Component State</h4>
+                            <div id="vh-component-states" class="vh-debug-scroll"></div>
+                        </section>
+                        <section class="vh-debug-block">
+                            <h4>Validation</h4>
+                            <div id="vh-validation-errors" class="vh-debug-scroll"></div>
+                        </section>
+                        <section class="vh-debug-block">
+                            <h4>Signal Log</h4>
+                            <div id="vh-signal-log" class="vh-debug-scroll"></div>
+                        </section>
+                        <section class="vh-debug-block">
+                            <h4>Logic Analyzer</h4>
+                            <canvas id="vh-logic-analyzer" class="vh-logic-analyzer" width="420" height="150"></canvas>
+                        </section>
+                        <section class="vh-debug-block">
+                            <h4>Inspector</h4>
+                            <div id="vh-inspector" class="vh-debug-scroll"></div>
+                        </section>
+                        <section class="vh-debug-block">
+                            <h4>Test Mode</h4>
+                            <div id="vh-test-results" class="vh-debug-scroll"></div>
+                        </section>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        <div class="col-resizer" data-resizer="right" role="separator" aria-orientation="vertical"
+            aria-label="Resize center and right panels"></div>
+
+        <aside class="panel-column right-pane" data-column="right">
+            <section class="panel dock-panel memory-panel modern-memory-panel" data-panel="memory">
+                <div id="memory-ram" class="memory-window"></div>
+                <div id="memory-xram" class="memory-window"></div>
+                <div id="memory-rom" class="memory-window"></div>
+            </section>
+
+            <section class="panel dock-panel" data-panel="metrics">
+                <div class="panel-title">Runtime Metrics</div>
+                <div id="metrics-panel-body" class="panel-content"></div>
+            </section>
+        </aside>
+
+        <div class="snap-preview" id="snap-preview" hidden></div>
+        <div class="floating-layer" id="floating-layer" aria-hidden="false"></div>
+    </main>
+
+    <footer class="statusbar">
+        <div id="status-text">Ready.</div>
+        <div id="status-extra" class="status-right">Mode: 8051</div>
+    </footer>
+</div>

@@ -1,0 +1,147 @@
+{% if sim_state %}
+<section class="subpanel">
+    <div class="subpanel-title">Execution State</div>
+    <table class="keil-table compact">
+        <tbody>
+            <tr>
+                <th>Ready</th>
+                <td>{{ "Yes" if sim_state.ready else "No" }}</td>
+            </tr>
+            <tr>
+                <th>Instruction Pointer</th>
+                <td>{{ sim_state.run_index }}</td>
+            </tr>
+            <tr>
+                <th>Instruction Count</th>
+                <td>{{ sim_state.instruction_count }}</td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+{% endif %}
+
+{% if registers %}
+<section class="subpanel">
+    <div class="subpanel-title">Registers</div>
+    <table class="keil-table compact" data-table="registers">
+        <thead>
+            <tr>
+                <th>Register</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for key, value in registers.items() %}
+            <tr>
+                <td>{{ key }}</td>
+                <td data-watch-key="reg:{{ key }}">{{ value }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+
+{% if flags %}
+<section class="subpanel">
+    <div class="subpanel-title">Flags</div>
+    <table class="keil-table compact" data-table="flags">
+        <thead>
+            <tr>
+                <th>Flag</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for key, value in flags.items() %}
+            <tr>
+                <td>{{ key }}</td>
+                <td class="flag-cell" data-watch-key="flag:{{ key }}">
+                    {% if value %}
+                    <input class="flag-input" type="checkbox" id="{{ key }}" data-flag-key="flag:{{ key }}" checked>
+                    {% else %}
+                    <input class="flag-input" type="checkbox" id="{{ key }}" data-flag-key="flag:{{ key }}">
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+
+{% if general_purpose_registers %}
+<section class="subpanel">
+    <div class="subpanel-title">Register Banks</div>
+    <table class="keil-table compact" data-table="register-banks">
+        <thead>
+            <tr>
+                <th></th>
+                {% for x in ["00", "01", "10", "11"] %}
+                <th>{{ x }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for kgpr, vgpr in zip(general_purpose_registers["00"].keys(), zip(general_purpose_registers["00"].values(), general_purpose_registers["01"].values(), general_purpose_registers["10"].values(), general_purpose_registers["11"].values())) %}
+            <tr>
+                <th>{{ kgpr }}</th>
+                {% for bank, val in zip(["00","01","10","11"], vgpr) %}
+                <td data-watch-key="gpr:{{ bank }}:{{ kgpr }}">{{ (val|string)[2:] }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+
+{% if sfr_watch %}
+<section class="subpanel">
+    <div class="subpanel-title">AT89C51 SFR Watch</div>
+    <table class="keil-table compact sfr-table" data-table="sfr">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Addr</th>
+                <th>Value</th>
+                <th>Bits</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in sfr_watch %}
+            <tr>
+                <td>{{ row.name }}</td>
+                <td>{{ row.addr }}</td>
+                <td data-watch-key="sfr:{{ row.name }}">{{ row.value }}</td>
+                <td class="bits-cell" data-watch-key="sfr-bits:{{ row.name }}">{{ row.bits }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+
+<section class="subpanel">
+    <div class="subpanel-title">Stack Top</div>
+    {% if stack_preview %}
+    <table class="keil-table compact" data-table="stack">
+        <thead>
+            <tr>
+                <th>Address</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in stack_preview %}
+            <tr>
+                <td>{{ row.address }}</td>
+                <td data-watch-key="stack:{{ row.address }}">{{ row.value }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-output">Stack is empty (SP at reset base).</div>
+    {% endif %}
+</section>

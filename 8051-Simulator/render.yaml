@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: hexalogic-api
+    env: python
+    plan: free
+    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --config gunicorn.conf.py wsgi:app
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: HEXLOGIC_API_BASE
+        value: ""
+      - key: HEXLOGIC_SESSION_BACKEND
+        value: memory
+      - key: REDIS_URL
+        sync: false
+      - key: HEXLOGIC_MAX_CONTENT_LENGTH
+        value: "262144"
+      - key: HEXLOGIC_MAX_SOURCE_CHARS
+        value: "200000"
+      - key: HEXLOGIC_MAX_RUN_STEPS
+        value: "100000"
+      - key: HEXLOGIC_ENABLE_DEBUG_TRACE
+        value: "0"
