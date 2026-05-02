@@ -33,29 +33,8 @@ const DEFAULT_HARDWARE_DEVICE_TYPES = [
     { type: "stepper", label: "Stepper", icon: "⟲" },
 ];
 const DEFAULT_SOURCE = {
-    "8051": [
-        "ORG 0000H",
-        "MOV A,#01H",
-        "MOV R0,#20H",
-        "MOV @R0,A",
-        "INC A",
-        "MOV P1,A",
-        "SJMP $",
-        "END",
-    ].join("\n"),
-    arm: [
-        "ORG 0000H",
-        "MOV R0, #4",
-        "MOV R1, #12",
-        "ADD R2, R0, R1",
-        "MOV R3, #0",
-        "STR R2, [R3, #0]",
-        "LDR R4, [R3, #0]",
-        "B DONE",
-        "DONE:",
-        "MOV R5, R4",
-        "END",
-    ].join("\n"),
+    "8051": "",
+    arm: "",
 };
 
 const appState = {
@@ -175,6 +154,7 @@ const hardwareState = {
     signalTokenOrder: [],
     seenSignalTokens: new Set(),
     pendingSignalStream: null,
+    lastUnrelatedNoticeMs: 0,
     view: {
         scale: Number(savedHardwareLayout.__view?.scale || 1),
         panX: Number(savedHardwareLayout.__view?.panX || 32),
@@ -3166,8 +3146,9 @@ function registerEditorLanguage(monaco) {
             root: [
                 [/;.*$/, "comment"],
                 [/^\s*[A-Za-z_][A-Za-z0-9_]*:/, "type.identifier"],
-                [/\b(?:ORG|END|DB|MOV|MOVX|MOVC|PUSH|POP|SETB|CLR|CPL|INC|DEC|ADD|ADDC|SUBB|ANL|ORL|XRL|RL|RR|RLC|RRC|SWAP|MUL|DIV|DJNZ|CJNE|JZ|JNZ|JC|JNC|SJMP|AJMP|LJMP|ACALL|LCALL|RET|RETI|JB|JNB|JBC|NOP|LDR|STR|B|SUB)\b/, "keyword"],
-                [/\b(?:R1[0-5]|R[0-9]|A|AB|C|DPTR|SP|ACC|PSW|B|P[0-3]|IE|IP|TCON|TMOD|TH0|TL0|TH1|TL1|SCON|SBUF|DPL|DPH|PC|LR)\b/, "variable"],
+                [/\b(?:ORG|END|DB|AREA|ENTRY|READONLY|READWRITE|CODE|DATA|DCD|WORD|MOV|MOVX|MOVC|PUSH|POP|SETB|CLR|CPL|INC|DEC|ADD|ADDC|SUBB|ANL|ORL|XRL|RL|RR|RLC|RRC|SWAP|MUL|DIV|DJNZ|CJNE|JZ|JNZ|JC|JNC|SJMP|AJMP|LJMP|ACALL|LCALL|RET|RETI|JB|JNB|JBC|NOP|MVN|ADC|SUB|SBC|RSB|RSC|AND|ORR|EOR|BIC|CMP|CMN|TST|TEQ|LSL|LSR|ASR|ROR|RRX|MLA|UMULL|UMLAL|SMULL|SMLAL|SMLA(?:BB|BT|TB|TT)|SMLAL(?:BB|BT|TB|TT)|SMUL(?:BB|BT|TB|TT|WB|WT)|LDR|STR|LDRB|STRB|LDRH|STRH|LDRSB|LDRSH|LDM|STM|LDMIA|STMIA|LDMIB|STMIB|LDMDA|STMDA|LDMDB|STMDB|STMFD|LDMFD|SWP|SWPB|B|BL|BX|BLX|MRS|MSR|SWI|BKPT)\b/, "keyword"],
+                [/\b(?:EQ|NE|GT|LT|GE|LE|CS|CC|HS|LO|MI|PL|VS|VC|HI|LS|AL)\b/, "keyword"],
+                [/\b(?:R1[0-5]|R[0-9]|A|AB|C|DPTR|SP|ACC|PSW|CPSR|SPSR|B|P[0-3]|IE|IP|TCON|TMOD|TH0|TL0|TH1|TL1|SCON|SBUF|DPL|DPH|PC|LR)\b/, "variable"],
                 [/#?[0-9A-F]+H\b/, "number.hex"],
                 [/#?0x[0-9a-f]+\b/, "number.hex"],
                 [/#?0b[01]+\b/, "number.binary"],
@@ -3643,7 +3624,7 @@ function renderRegisters(snapshot) {
         .map(([name, value]) => `<tr><th>${escapeHtml(name)}</th><td data-flag="${escapeHtml(name)}">${value ? "1" : "0"}</td></tr>`)
         .join("") || '<tr><td colspan="2" class="empty-output">No flags for this architecture.</td></tr>';
     const timerRows = Object.entries(snapshot?.timers || {})
-        .map(([name, value]) => `<tr><th>${escapeHtml(name.toUpperCase())}</th><td>${escapeHtml(JSON.stringify(value))}</td></tr>`)
+        .map(([name, value]) => `<tr><th>${escapeHtml(name.toUpperCase())}</th><td>${formatTimerFields(value)}</td></tr>`)
         .join("") || '<tr><td colspan="2" class="empty-output">No timer model.</td></tr>';
     const body = safeSetHTML("registers-panel-body", `
         <div class="subpanel">
@@ -3656,7 +3637,7 @@ function renderRegisters(snapshot) {
         </div>
         <div class="subpanel">
             <div class="subpanel-title">Timers</div>
-            <table class="keil-table compact"><tbody>${timerRows}</tbody></table>
+            <table class="keil-table compact timer-table"><tbody>${timerRows}</tbody></table>
         </div>
     `);
     domMaps.registers.clear();
@@ -3666,6 +3647,24 @@ function renderRegisters(snapshot) {
     }
     body.querySelectorAll("[data-register]").forEach((cell) => domMaps.registers.set(cell.dataset.register, cell));
     body.querySelectorAll("[data-flag]").forEach((cell) => domMaps.flags.set(cell.dataset.flag, cell));
+}
+
+function formatTimerFields(value) {
+    if (!isPlainObject(value)) {
+        return `<span class="timer-fields">${escapeHtml(String(value ?? "-"))}</span>`;
+    }
+    const order = ["TR", "TF", "TH", "TL", "RCAPH", "RCAPL", "load", "value", "ctrl", "pending"];
+    const entries = Object.entries(value).sort(([left], [right]) => {
+        const leftIndex = order.indexOf(left);
+        const rightIndex = order.indexOf(right);
+        if (leftIndex !== -1 || rightIndex !== -1) {
+            return (leftIndex === -1 ? 999 : leftIndex) - (rightIndex === -1 ? 999 : rightIndex);
+        }
+        return left.localeCompare(right);
+    });
+    return `<div class="timer-fields">${entries
+        .map(([key, fieldValue]) => `<span class="timer-field"><strong>${escapeHtml(key)}</strong>${escapeHtml(String(fieldValue))}</span>`)
+        .join("")}</div>`;
 }
 
 function renderCallStack(snapshot) {
@@ -3679,7 +3678,7 @@ function renderCallStack(snapshot) {
 function buildMemoryTable(title, space, values, addressWidth) {
     const keys = Object.keys(values || {}).map((key) => Number(key)).sort((left, right) => left - right);
     if (!keys.length) {
-        return `<div class="memory-window"><div class="subpanel-title">${title}</div><div class="empty-output">No data.</div></div>`;
+        return `<div class="subpanel-title">${title}</div><div class="empty-output">No data.</div>`;
     }
     const maxAddress = Math.max(...keys);
     const rows = [];
@@ -3693,14 +3692,12 @@ function buildMemoryTable(title, space, values, addressWidth) {
         rows.push(`<tr><th>${toHex(base, addressWidth)}</th>${cells.join("")}</tr>`);
     }
     return `
-        <div class="memory-window">
-            <div class="subpanel-title">${title}</div>
-            <div class="memory-scroll">
-                <table class="keil-table compact memory-table">
-                    <thead><tr><th>Addr</th>${Array.from({ length: 16 }, (_, index) => `<th>${index.toString(16).toUpperCase()}</th>`).join("")}</tr></thead>
-                    <tbody>${rows.join("")}</tbody>
-                </table>
-            </div>
+        <div class="subpanel-title">${title}</div>
+        <div class="memory-scroll">
+            <table class="keil-table compact memory-table">
+                <thead><tr><th>Addr</th>${Array.from({ length: 16 }, (_, index) => `<th>${index.toString(16).toUpperCase()}</th>`).join("")}</tr></thead>
+                <tbody>${rows.join("")}</tbody>
+            </table>
         </div>
     `;
 }
@@ -3932,7 +3929,11 @@ function _recordSignalEvents(events = []) {
             }
         }
         const history = hardwareState.signalHistory[name] || [];
-        history.push(Number(event?.value || 0));
+        history.push({
+            value: Number(event?.value || 0),
+            time_ms: Number(event?.time_ms ?? 0),
+            cycle: Number(event?.cycle ?? 0),
+        });
         hardwareState.signalHistory[name] = history.slice(-48);
     }
 }
@@ -3947,34 +3948,80 @@ function _seedSignalHistoryFromHardware(snapshot) {
 function updateWaveform(snapshot) {
     _seedSignalHistoryFromHardware(snapshot);
     const channels = Object.entries(hardwareState.signalHistory)
-        .filter(([, history]) => Array.isArray(history) && history.length && history.some((sample) => sample !== history[0]))
+        .filter(([, history]) => Array.isArray(history) && history.length && history.some((sample) => waveSampleValue(sample) !== waveSampleValue(history[0])))
         .map(([name, history]) => ({ name, history }));
+    if (channels.length && byId("wave-drawer")?.hidden) {
+        setWaveDrawerOpen(true);
+    }
     safeSetText("wave-status", channels.length ? `${channels.length} active signal channel(s)` : "No waveform channels detected.");
     safeSetHidden("wave-empty", Boolean(channels.length));
     safeSetHTML("wave-list", channels
-        .map((channel) => `
+        .map((channel) => {
+            const first = channel.history[0] || {};
+            const last = channel.history[channel.history.length - 1] || {};
+            const delay = Math.max(0, Number(last.time_ms || 0) - Number(first.time_ms || 0));
+            const transitions = countWaveTransitions(channel.history);
+            return `
             <div class="wave-row">
-                <div class="wave-label">${channel.name}</div>
-                <svg viewBox="0 0 240 28" class="wave-canvas" aria-hidden="true">
+                <div class="wave-label">${escapeHtml(channel.name)}<br>${escapeHtml(`${transitions} edges`)}<br>${escapeHtml(`${delay.toFixed(3)} ms`)}</div>
+                <svg viewBox="0 0 420 44" class="wave-canvas" aria-hidden="true">
+                    <line x1="0" y1="36" x2="420" y2="36" class="wave-axis"></line>
                     <path d="${buildWavePath(channel.history)}" />
                 </svg>
             </div>
-        `)
+        `;
+        })
         .join(""));
+}
+
+function notifyUnrelatedHardwareIfNeeded(snapshot, hardwareDiff = null) {
+    const devices = snapshot?.hardware?.devices || [];
+    if (!devices.length) {
+        return;
+    }
+    const connected = devices.filter((device) => Object.values(device.connections || {}).some(Boolean));
+    if (!connected.length) {
+        return;
+    }
+    const signalChanges = hardwareDiff?.signal_changes || snapshot?.hardware?.debug?.signal_log || [];
+    const changedIds = hardwareDiff?.changed_ids || [];
+    if (signalChanges.length || changedIds.length) {
+        return;
+    }
+    const now = Date.now();
+    if (now - Number(hardwareState.lastUnrelatedNoticeMs || 0) < 5000) {
+        return;
+    }
+    hardwareState.lastUnrelatedNoticeMs = now;
+    pushToast("Hardware is connected, but this run did not drive related pins.", "warn", 3200);
+}
+
+function waveSampleValue(sample) {
+    return isPlainObject(sample) ? Number(sample.value || 0) : Number(sample || 0);
+}
+
+function countWaveTransitions(samples) {
+    let transitions = 0;
+    for (let index = 1; index < samples.length; index += 1) {
+        if (waveSampleValue(samples[index]) !== waveSampleValue(samples[index - 1])) {
+            transitions += 1;
+        }
+    }
+    return transitions;
 }
 
 function buildWavePath(samples) {
     if (!samples.length) {
         return "";
     }
-    const step = 240 / Math.max(samples.length - 1, 1);
-    const high = 6;
-    const low = 22;
-    let path = `M 0 ${samples[0] ? high : low}`;
+    const step = 420 / Math.max(samples.length - 1, 1);
+    const high = 8;
+    const low = 34;
+    let path = `M 0 ${waveSampleValue(samples[0]) ? high : low}`;
     for (let index = 1; index < samples.length; index += 1) {
         const x = index * step;
-        const previousY = samples[index - 1] ? high : low;
-        const nextY = samples[index] ? high : low;
+        const previousY = waveSampleValue(samples[index - 1]) ? high : low;
+        const nextY = waveSampleValue(samples[index]) ? high : low;
         path += ` L ${x} ${previousY} L ${x} ${nextY}`;
     }
     return path;
@@ -4396,6 +4443,7 @@ async function runLoop() {
                 response.result.reason !== "max_steps" ? `Run stopped: ${response.result.reason}.` : null,
                 response,
             );
+            notifyUnrelatedHardwareIfNeeded(response.state, response.diff?.hardware || null);
             if (window.DEBUG_TIMING) {
                 console.log("[DEBUG_TIMING]", {
                     architecture: appState.architecture,

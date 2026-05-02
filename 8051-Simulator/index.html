@@ -35,7 +35,6 @@
                 onerror="this.onerror=null;this.src='/api/static/hexlogic-logo-light.png';">
             <div class="loader-copy">
                 <div class="loader-title">HexaLogic Emulator</div>
-                <div class="loader-subtitle">Booting sandboxed multi-architecture debugger</div>
             </div>
             <div class="loader-bar"><span id="loader-progress"></span></div>
         </div>
@@ -52,7 +51,6 @@
                 <span class="brand-chip" id="target-chip">Target: 8051</span>
             </div>
         </div>
-        <div class="title-right">Sandboxed Multi-Architecture Debug View</div>
     </header>
 
     <div class="toolbar">
@@ -165,11 +163,10 @@
     <main class="workspace modern-workspace" id="workspace">
         <aside class="panel-column left-pane" data-column="left">
             <section class="panel dock-panel target-panel" data-panel="target">
-                <div class="panel-title">Target Explorer</div>
+                <div class="panel-title">Breakpoints</div>
                 <div class="panel-content">
-                    <ul class="project-tree" id="project-tree"></ul>
+                    <ul class="project-tree" id="project-tree" hidden></ul>
                     <div class="breakpoint-summary">
-                        <div class="summary-title">Breakpoints</div>
                         <div id="breakpoint-list" class="summary-body">None</div>
                     </div>
                 </div>
@@ -199,7 +196,6 @@
                 <section class="panel dock-panel editor-panel" data-panel="editor">
                     <div class="panel-title panel-title-row">
                         <span>Editor - main.asm</span>
-                        <span class="editor-hint">Glyph margin toggles breakpoints</span>
                     </div>
                     <div class="editor-shell">
                         <div id="editor-host" class="editor-host"></div>

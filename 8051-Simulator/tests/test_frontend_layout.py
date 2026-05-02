@@ -86,6 +86,7 @@ def test_frontend_layout_resize_math_stays_within_expected_bounds():
 
 def test_frontend_renderer_uses_null_safe_panel_updates():
     source = APP_MODULE.read_text()
+    shell = FLASK_SHELL.read_text()
 
     assert "function safeSetHTML" in source
     assert "function formatTraceLogEntry" in source
@@ -116,6 +117,15 @@ def test_frontend_renderer_uses_null_safe_panel_updates():
     ]
     for pattern in unsafe_trace_patterns:
         assert pattern not in source
+
+    assert '"8051": ""' in source
+    assert 'arm: ""' in source
+    assert "formatTimerFields" in source
+    assert "notifyUnrelatedHardwareIfNeeded" in source
+    assert "Booting sandboxed multi-architecture debugger" not in shell
+    assert "Sandboxed Multi-Architecture Debug View" not in shell
+    assert "Glyph margin toggles breakpoints" not in shell
+    assert "Target Explorer" not in shell
 
 
 def test_static_ui_controls_are_bound_to_runtime_handlers():

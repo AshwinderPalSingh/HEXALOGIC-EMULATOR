@@ -358,15 +358,10 @@ body {
 }
 
 .brand-logo {
-    width: 128px;
-    height: 76px;
-    border-radius: 14px;
-    border: 1px solid color-mix(in srgb, var(--panel-border) 76%, transparent);
-    background: color-mix(in srgb, var(--panel-bg-soft) 80%, transparent);
-    padding: 6px;
+    width: 150px;
+    height: 86px;
     object-fit: contain;
     image-rendering: -webkit-optimize-contrast;
-    box-shadow: var(--shadow-sm);
 }
 
 .brand-meta {
@@ -437,7 +432,7 @@ body {
     top: 112px;
     right: 1rem;
     z-index: 10000;
-    width: min(520px, calc(100vw - 1.24rem));
+    width: min(920px, calc(100vw - 1.24rem));
     max-height: calc(100vh - 162px);
     border: 1px solid var(--panel-border);
     border-radius: 12px;
@@ -509,7 +504,8 @@ body {
 .wave-row {
     border: 1px solid var(--table-border);
     border-radius: 10px;
-    padding: 0.34rem 0.38rem;
+    min-height: 58px;
+    padding: 0.44rem 0.5rem;
     background: color-mix(in srgb, var(--panel-bg-soft) 78%, transparent);
 }
 
@@ -911,7 +907,7 @@ body {
 }
 
 .left-pane .target-panel {
-    flex: 0 0 220px;
+    flex: 0 0 118px;
 }
 
 .left-pane .registers-panel {
@@ -1244,7 +1240,7 @@ body {
 }
 
 .breakpoint-summary {
-    margin-top: 0.56rem;
+    margin-top: 0;
     border: 1px solid var(--table-border);
     border-radius: 8px;
     background: color-mix(in srgb, var(--panel-bg) 78%, white 22%);
@@ -1303,7 +1299,40 @@ body {
     padding: 0.22rem 0.24rem;
     text-align: center;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     transition: background 230ms ease, color 230ms ease, box-shadow 230ms ease;
+}
+
+.timer-table {
+    table-layout: auto;
+}
+
+.timer-table th {
+    width: 42px;
+}
+
+.timer-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: flex-start;
+    white-space: normal;
+}
+
+.timer-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    border: 1px solid color-mix(in srgb, var(--table-border) 78%, transparent);
+    border-radius: 6px;
+    padding: 2px 5px;
+    background: color-mix(in srgb, var(--panel-bg-soft) 74%, transparent);
+    font: 10px/1.25 var(--font-mono);
+}
+
+.timer-field strong {
+    font-weight: 800;
 }
 
 .keil-table thead th {
@@ -1551,19 +1580,33 @@ body {
 .memory-panel {
     overflow: auto;
     display: grid;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 0.72fr);
     gap: 0.42rem;
     padding: 0.42rem;
 }
 
 .modern-memory-panel {
-    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 0.72fr) minmax(0, 1fr);
 }
 
 .memory-window {
     min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--table-border) 70%, transparent);
+    border-radius: 8px;
+    padding: 0.35rem;
+    background: color-mix(in srgb, var(--panel-bg) 78%, transparent);
+}
+
+.memory-window .subpanel-title {
+    flex: 0 0 auto;
+}
+
+.memory-window .memory-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .memory-table th,
@@ -1784,7 +1827,7 @@ body {
 
 .wave-row {
     display: grid;
-    grid-template-columns: 72px 1fr;
+    grid-template-columns: 100px 1fr;
     gap: 0.55rem;
     align-items: center;
 }
@@ -1796,13 +1839,18 @@ body {
 
 .wave-canvas {
     width: 100%;
-    height: 28px;
+    height: 44px;
 }
 
 .wave-canvas path {
     fill: none;
     stroke: var(--gutter-active);
     stroke-width: 2;
+}
+
+.wave-axis {
+    stroke: color-mix(in srgb, var(--table-border) 72%, transparent);
+    stroke-width: 1;
 }
 
 .status-right {
@@ -2813,6 +2861,7 @@ body[data-theme="dark"] {
         linear-gradient(var(--vh-board-grid) 1px, transparent 1px),
         linear-gradient(90deg, var(--vh-board-grid) 1px, transparent 1px);
     background-size: 24px 24px, 24px 24px, 24px 24px;
+    background-position: 0 0, 0 0, 0 0;
     border: 0;
 }
 
@@ -2833,12 +2882,7 @@ body[data-theme="dark"] {
     z-index: 10;
     border-radius: 0;
     pointer-events: none;
-    background-color: var(--vh-board-bg);
-    background-image:
-        radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--vh-board-grid) 55%, transparent 45%) 1px, transparent 0),
-        linear-gradient(var(--vh-board-grid) 1px, transparent 1px),
-        linear-gradient(90deg, var(--vh-board-grid) 1px, transparent 1px);
-    background-size: 24px 24px, 24px 24px, 24px 24px;
+    background: transparent;
 }
 
 .vh-wire-layer {

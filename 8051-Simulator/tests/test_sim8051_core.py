@@ -1158,6 +1158,73 @@ def test_arm_keil_style_source_with_area_entry_literal_loads_and_data_labels_run
     assert any(step.mnemonic.startswith("UMLAL") for step in result.steps)
 
 
+def test_arm_sum_array_keil_example_runs_with_post_indexed_load():
+    assembler = AssemblerARM(code_size=0x400, endian="little")
+    program = assembler.assemble(
+        """
+        AREA    SUM_ARRAY, CODE, READONLY
+        ENTRY
+
+START
+        LDR     R0, =ARRAY
+        MOV     R1, #5
+        MOV     R2, #0
+
+LOOP
+        CMP     R1, #0
+        BEQ     DONE
+
+        LDR     R3, [R0], #4
+        ADD     R2, R2, R3
+
+        SUB     R1, R1, #1
+        B       LOOP
+
+DONE
+STOP
+        B STOP
+
+        AREA    DATA, DATA, READWRITE
+
+ARRAY   DCD     10, 20, 30, 40, 50
+
+        END
+        """.strip()
+    )
+    cpu = CPUARM(code_size=0x400, data_size=0x400, endian="little")
+    cpu.load_program(program)
+    cpu.run(max_steps=64)
+
+    assert program.labels["ARRAY"] == 0x100
+    assert cpu.registers[2] == 150
+    assert cpu.registers[1] == 0
+    assert cpu.pc == program.labels["STOP"]
+
+
+def test_arm_data_processing_reference_ops_update_results_and_flags():
+    assembler = AssemblerARM(code_size=0x200, endian="little")
+    program = assembler.assemble(
+        """
+        ORG 0000H
+        MOV R0, #5
+        MOV R1, #3
+        RSB R2, R0, #10
+        BIC R3, R2, #1
+        TEQ R3, #4
+        CMN R1, #1
+        END
+        """.strip()
+    )
+    cpu = CPUARM(code_size=0x200, data_size=0x100, endian="little")
+    cpu.load_program(program)
+    cpu.run(max_steps=16)
+
+    assert cpu.registers[2] == 5
+    assert cpu.registers[3] == 4
+    assert cpu.flag_z == 0
+    assert cpu.flag_n == 0
+
+
 def test_arm_shifts_conditional_execution_and_stack_pseudos_work():
     assembler = AssemblerARM(code_size=0x200, endian="little")
     program = assembler.assemble(

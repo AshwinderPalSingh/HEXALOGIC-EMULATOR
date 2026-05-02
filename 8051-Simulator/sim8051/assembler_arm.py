@@ -30,7 +30,7 @@ CONDITION_CODES = {
 }
 SHIFT_CODES = {"LSL": 0, "LSR": 1, "ASR": 2, "ROR": 3}
 BRANCH_MNEMONICS = {"B", "BL"}
-DP_MNEMONICS = {"AND", "EOR", "SUB", "ADC", "SBC", "TST", "CMP", "ORR", "MOV", "MVN", "ADD"}
+DP_MNEMONICS = {"AND", "EOR", "SUB", "RSB", "ADD", "ADC", "SBC", "RSC", "TST", "TEQ", "CMP", "CMN", "ORR", "MOV", "BIC", "MVN"}
 LOAD_STORE_MNEMONICS = {"LDR", "STR"}
 MULTIPLY_MNEMONICS = {"MUL", "MLA"}
 MULTIPLY_LONG_MNEMONICS = {"UMULL", "UMLAL", "SMULL", "SMLAL"}
@@ -150,10 +150,13 @@ class AssemblerARM:
                 "ADD",
                 "ADC",
                 "SUB",
+                "RSB",
                 "SBC",
+                "RSC",
                 "AND",
                 "ORR",
                 "EOR",
+                "BIC",
                 "MOV",
                 "MVN",
                 "MUL",
@@ -171,7 +174,7 @@ class AssemblerARM:
                 condition_suffix = suffix
             if condition_suffix not in CONDITION_CODES:
                 continue
-            if base in {"CMP", "TST"}:
+            if base in {"CMP", "CMN", "TST", "TEQ"}:
                 set_flags = True
             return ArmMnemonic(
                 base=base,
@@ -388,7 +391,7 @@ class AssemblerARM:
     def _parse_operand2(self, mnemonic: ArmMnemonic, operands: list[str], symbols: dict[str, int], line: ParsedArmLine) -> tuple[int, int]:
         if mnemonic.base in {"MOV", "MVN"}:
             source_index = 1
-        elif mnemonic.base in {"CMP", "TST"}:
+        elif mnemonic.base in {"CMP", "CMN", "TST", "TEQ"}:
             source_index = 1
         else:
             source_index = 2
@@ -469,7 +472,7 @@ class AssemblerARM:
             rm = self._parse_register(operands[0], line.line_no)
             word = (mnemonic.condition << 28) | 0x012FFF10 | rm
             return self._encode_word(word)
-        if base in {"MOV", "MVN", "ADD", "ADC", "SUB", "SBC", "AND", "ORR", "EOR", "CMP", "TST"}:
+        if base in {"MOV", "MVN", "ADD", "ADC", "SUB", "SBC", "RSB", "RSC", "AND", "ORR", "EOR", "BIC", "CMP", "CMN", "TST", "TEQ"}:
             return self._encode_data_processing(mnemonic, operands, symbols, line)
         if base in {"LDR", "STR"}:
             return self._encode_load_store(mnemonic, operands, symbols, line)
@@ -544,7 +547,24 @@ class AssemblerARM:
         return self._encode_word(word)
 
     def _encode_data_processing(self, mnemonic: ArmMnemonic, operands: list[str], symbols: dict[str, int], line: ParsedArmLine) -> bytes:
-        opcode_map = {"AND": 0x0, "EOR": 0x1, "SUB": 0x2, "ADD": 0x4, "ADC": 0x5, "SBC": 0x6, "TST": 0x8, "CMP": 0xA, "ORR": 0xC, "MOV": 0xD, "MVN": 0xF}
+        opcode_map = {
+            "AND": 0x0,
+            "EOR": 0x1,
+            "SUB": 0x2,
+            "RSB": 0x3,
+            "ADD": 0x4,
+            "ADC": 0x5,
+            "SBC": 0x6,
+            "RSC": 0x7,
+            "TST": 0x8,
+            "TEQ": 0x9,
+            "CMP": 0xA,
+            "CMN": 0xB,
+            "ORR": 0xC,
+            "MOV": 0xD,
+            "BIC": 0xE,
+            "MVN": 0xF,
+        }
         opcode = opcode_map[mnemonic.base]
         set_flags = mnemonic.set_flags
         cond = mnemonic.condition << 28
@@ -557,7 +577,7 @@ class AssemblerARM:
             word = cond | (opcode << 21) | ((1 if set_flags else 0) << 20) | (rd << 12) | operand2
             return self._encode_word(word)
 
-        if mnemonic.base in {"CMP", "TST"}:
+        if mnemonic.base in {"CMP", "CMN", "TST", "TEQ"}:
             if len(operands) < 2 or len(operands) > 3:
                 raise AssemblyError(f"{mnemonic.base} expects two operands and optional shift", line.line_no)
             rn = self._parse_register(operands[0], line.line_no)

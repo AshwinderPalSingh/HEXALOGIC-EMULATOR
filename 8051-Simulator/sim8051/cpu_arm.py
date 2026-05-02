@@ -30,13 +30,18 @@ DATA_PROCESSING_NAMES = {
     0x0: "AND",
     0x1: "EOR",
     0x2: "SUB",
+    0x3: "RSB",
     0x4: "ADD",
     0x5: "ADC",
     0x6: "SBC",
+    0x7: "RSC",
     0x8: "TST",
+    0x9: "TEQ",
     0xA: "CMP",
+    0xB: "CMN",
     0xC: "ORR",
     0xD: "MOV",
+    0xE: "BIC",
     0xF: "MVN",
 }
 _DEBUG_TIMING = os.environ.get("HEXLOGIC_DEBUG_TIMING", "").strip().lower() in {"1", "true", "yes", "on"}
@@ -540,14 +545,28 @@ class CPUARM(BaseCPU):
             if set_flags:
                 self._set_logic_flags(result, shifter_carry)
             return f"ORR R{rd},R{rn},{operand_text}", 1
+        if opcode_id == 0xE:  # BIC
+            result = left & (~operand2 & 0xFFFFFFFF)
+            self._write_reg(rd, result)
+            if set_flags:
+                self._set_logic_flags(result, shifter_carry)
+            return f"BIC R{rd},R{rn},{operand_text}", 1
         if opcode_id == 0x8:  # TST
             result = left & operand2
             self._set_logic_flags(result, shifter_carry)
             return f"TST R{rn},{operand_text}", 1
+        if opcode_id == 0x9:  # TEQ
+            result = left ^ operand2
+            self._set_logic_flags(result, shifter_carry)
+            return f"TEQ R{rn},{operand_text}", 1
         if opcode_id == 0xA:  # CMP
             result = (left - operand2) & 0xFFFFFFFF
             self._set_sub_flags(left, operand2, 0, result)
             return f"CMP R{rn},{operand_text}", 1
+        if opcode_id == 0xB:  # CMN
+            result = (left + operand2) & 0xFFFFFFFF
+            self._set_add_flags(left, operand2, 0, result)
+            return f"CMN R{rn},{operand_text}", 1
         if opcode_id == 0x4:  # ADD
             result = (left + operand2) & 0xFFFFFFFF
             self._write_reg(rd, result)
@@ -567,6 +586,12 @@ class CPUARM(BaseCPU):
             if set_flags:
                 self._set_sub_flags(left, operand2, 0, result)
             return f"SUB R{rd},R{rn},{operand_text}", 1
+        if opcode_id == 0x3:  # RSB
+            result = (operand2 - left) & 0xFFFFFFFF
+            self._write_reg(rd, result)
+            if set_flags:
+                self._set_sub_flags(operand2, left, 0, result)
+            return f"RSB R{rd},R{rn},{operand_text}", 1
         if opcode_id == 0x6:  # SBC
             borrow = 1 - self.flag_c
             result = (left - operand2 - borrow) & 0xFFFFFFFF
@@ -574,6 +599,13 @@ class CPUARM(BaseCPU):
             if set_flags:
                 self._set_sub_flags(left, operand2, borrow, result)
             return f"SBC R{rd},R{rn},{operand_text}", 1
+        if opcode_id == 0x7:  # RSC
+            borrow = 1 - self.flag_c
+            result = (operand2 - left - borrow) & 0xFFFFFFFF
+            self._write_reg(rd, result)
+            if set_flags:
+                self._set_sub_flags(operand2, left, borrow, result)
+            return f"RSC R{rd},R{rn},{operand_text}", 1
         raise DecodeError(f"ARM opcode 0x{opcode:08X} is not implemented", pc=current_pc)
 
     def _execute_load_store(self, opcode: int, current_pc: int) -> tuple[str, int]:
